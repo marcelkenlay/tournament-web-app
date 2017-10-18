@@ -1,0 +1,13 @@
+AuthName "Restricted Area"
+AuthType Basic
+AuthUserFile /storage/ssd4/118/3177118/data/.htpasswd
+AuthGroupFile /dev/null
+<Files addTournament.php>
+require valid-user
+</Files>
+<Files saveTournament.php>
+require valid-user
+</Files>
+<Files competeTournament.php>
+require valid-user
+</Files>
