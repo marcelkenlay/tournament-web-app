@@ -7,34 +7,11 @@
     <title>Previous Tournaments</title>
 </head>
 
-<body onload="load()">
-
-  <!-- </head>
-  <body onload="load()">
-    <div class="wrapper">
-      <div class="navigation fixed">
-        <h4>Tournament Tracker</h4>
-        <ul class="nav">
-          <li><a href="index.php">Past Tournaments</a></li>
-          <li class="active"><a href="overallLeaderboard.php">Leaderboard</a></li>
-          <li><a href="playerRecord.php">Player Record</a></li>
-          <li><a href="addTournament.php">Add a Tournament</a></li>
-        </ul>
-      </div>
-    </div> -->
-
-
-      <div class="wrapper">
-        <div class="navigation">
-          <ul class="nav">
-            <li class="active"><a href="index.php">Past Tournaments</a></li>
-            <li><a href="overallLeaderboard.php">Leaderboard</a></li>
-            <li><a href="playerRecord.php">Player Record</a></li>
-            <li><a href="addTournament.php">Add a Tournament</a></li>
-          </ul>
-        </div>
-      </div>
-
+<body onload="load()">
+  <?php
+    require 'header.php';
+    echoHeader();
+  ?>
   <div id="mydata">
     <h1>PREVIOUS TOURNAMENTS</h1>
     <p>Click a tournament to view the table.</p>
@@ -44,142 +21,64 @@
           <th>1st Place</th>
         </tr>
         <?php
-
-        function quick_sort($array, $playerStats){
-          $length = count($array);
-          if($length <= 1){
-            return $array;
-          } else {
-            $pivot = $array[0];
-            $pivotPoints = 3 * $playerStats[$array[0]]['Wins']
-                   + $playerStats[$array[0]]['Draws'];
-            $pivotGoalDiff = $playerStats[$array[0]]['GoalsFor'] - $playerStats[$array[0]]['GoalsAgainst'];
-            $left = $right = array();
-            for($k = 1; $k < count($array); $k++){
-              $points = 3 * $playerStats[$array[$k]]['Wins'] + $playerStats[$array[$k]]['Draws'];
-              $goalDiff = $playerStats[$array[$k]]['GoalsFor'] - $playerStats[$array[$k]]['GoalsAgainst'];
-              if($points > $pivotPoints
-                  || ($points == $pivotPoints && $goalDiff > $pivotGoalDiff)){
-                 $left[] = $array[$k];
-              } else {
-                 $right[] = $array[$k];
-              }
-             }
-             return array_merge(quick_sort($left, $playerStats), array($pivot), quick_sort($right, $playerStats));
-          }
-        }
-
-
-        $playerFile = fopen("../data/playerNames.txt", "r") or die("Unable to open file!");
-        $playerFileText = fread($playerFile,filesize("../data/playerNames.txt"));
+
+        require 'tableFunctions.php';
+        require 'fileHandling.php';
+
+        //Read text from file and split into the names of different players
+        $playerFileText = readFileText("../data/playerNames.txt");
         $playerFileText = preg_replace('/\s+/', '', $playerFileText);
-        fclose($playerFile);
         $playerNames = explode(",",$playerFileText);
-
-
-        $myfile = fopen("../data/pastTournamentNames.txt", "r") or die("Unable to open file!");
-        $fileText = fread($myfile,filesize("../data/pastTournamentNames.txt"));
-        fclose($myfile);
-        $records = explode("\n",$fileText);
+
+        //Read text from file and split into the details of different tournaments
+        $pastTournamentsText = readFileText("../data/pastTournamentNames.txt");
+        $records = explode("\n",$pastTournamentsText);
         $rowNum = 1;
-
-
+
+
+        //Loop through records of all tournaments from most recent
         for ($i=count($records) -1; $i >= 0; $i--) {
+          //Ensure the record is not empty and contains data to process
           if(strlen($records[$i]) > 0){
             $fields = explode("|",$records[$i]);
+
+            //Read file containing information about tournament and split into records
+            //of players involved and match results
+            $tournamentFileName = "../data/tournaments/tournament". $fields[1] . ".txt";
+            $tournamentFileName = preg_replace('/\s+/', '', $tournamentFileName);
+            $tournamentFileText = readFileText($tournamentFileName);
+            $tournamentRecords = explode("\n", $tournamentFileText);
+
+            //Split first record to get players involved
+            $playerNumbers = explode(",", $tournamentRecords[0]);
+            //Call function which will process remaining records and return a 2D array
+            //which details the performance of all players involved
+            $playerStats = processTournamentData($playerNumbers, $tournamentRecords);
+            //Use quick sort function which will sort the player stats into the correct
+            //order based on performance.
+            $playerNumbers = quick_sort($playerNumbers, $playerStats);
+
+
+            //Output row which summarises tournament information
+            echo "<tr id=\"tr$rowNum\" onClick=\"Javacsript:expandTournament(this)\"><td>";
+            echo $fields[0] ."</td>";
+            //This field defines the player first place
+            echo "<td>" . $playerNames[$playerNumbers[0]] . "</td>";
 
-
-
-            $tournamentFileName = "../data/tournaments/tournament". $fields[1] . ".txt";
-            $tournamentFileName = preg_replace('/\s+/', '', $tournamentFileName);
-
-            $tournamentFile = fopen($tournamentFileName, "r") or die("Unable to open file!");
-            $tournamentFileText = fread($tournamentFile,filesize($tournamentFileName));
-            fclose($tournamentFile);
-
-            $tableID = "tournamentTable" . $i;
-
-
-            $tournamentRecords = explode("\n", $tournamentFileText);
-
-            $playerStats = array();
-            $playerNumbers = explode(",", $tournamentRecords[0]);
-            for ($j=0; $j < count($playerNumbers); $j++) {
-              $stats = array("Points"=>0, "Wins"=>0, "Draws"=>0, "Losses"=>0, "GoalsFor"=>0, "GoalsAgainst"=>0);
-              $playerStats[($playerNumbers[$j])] = $stats;
-            }
-
-            for ($j=1; $j < count($tournamentRecords); $j++) {
-              if (strlen($tournamentRecords[$j]) > 0){
-                $matchFields = explode(",", $tournamentRecords[$j]);
-                if (strlen($matchFields[1]) > 0 && strlen($matchFields[2]) > 0){
-                  $playerStats[($matchFields[0])]['GoalsFor'] += $matchFields[1];
-                  $playerStats[($matchFields[3])]['GoalsAgainst'] += $matchFields[1];
-                  $playerStats[($matchFields[0])]['GoalsAgainst'] += $matchFields[2];
-                  $playerStats[($matchFields[3])]['GoalsFor'] += $matchFields[2];
-                  if ($matchFields[1] > $matchFields[2]) {
-                    $playerStats[($matchFields[0])]['Wins'] += 1;
-                    $playerStats[($matchFields[3])]['Losses'] += 1;
-                  } elseif ($matchFields[1] < $matchFields[2]) {
-                    $playerStats[($matchFields[0])]['Losses'] += 1;
-                    $playerStats[($matchFields[3])]['Wins'] += 1;
-                  } else {
-                    $playerStats[($matchFields[0])]['Draws'] += 1;
-                    $playerStats[($matchFields[3])]['Draws'] += 1;
-                  }
-                }
-              }
-            }
-
-
-              $playerNumbers = quick_sort($playerNumbers, $playerStats);
-
-              echo "<tr id=\"tr$rowNum\" onClick=\"Javacsript:expandTournament(this)\"><td>" . $fields[0] ."</td>";
-              echo "<td>" . $playerNames[$playerNumbers[0]] . "</td>";
-
-              $rowNum += 1;
-
-              echo "<tr id=\"tr$rowNum\"  style=\"display: none\"><td class=\"tableHolder\" colspan=\"2\">\n";
-
-              $rowNum += 1;
-
-              echo "<table class=\"inner\" >\n";
-              echo "<tr><th class=\"inner\">Pos</th>
-                        <th class=\"inner\">Name</th>
-                        <th class=\"inner\">GP</th>
-                        <th class=\"inner\">Pts</th>
-                        <th class=\"inner\">W</th>
-                        <th class=\"inner\">D</th>
-                        <th class=\"inner\">L</th>
-                        <th class=\"inner\">GF</th>
-                        <th class=\"inner\">GA</th>
-                        <th class=\"inner\">GD</th>
-                        </tr>\n";
-
-              for ($j=0; $j < count($playerNumbers); $j++) {
-                $gamesPlayed = $playerStats[$playerNumbers[$j]]['Wins'] + $playerStats[$playerNumbers[$j]]['Draws']
-                              + $playerStats[$playerNumbers[$j]]['Losses'];
-                $points =  3 * $playerStats[$playerNumbers[$j]]['Wins'] + $playerStats[$playerNumbers[$j]]['Draws'];
-                $goalDifference = $playerStats[$playerNumbers[$j]]['GoalsFor'] - $playerStats[$playerNumbers[$j]]['GoalsAgainst'];
-                echo "<tr><td>" . ($j + 1) . "</td>";
-                echo "<td class=\"nameColumn\">" . $playerNames[$playerNumbers[$j]] . "</td>";
-                echo "<td>" . $gamesPlayed . "</td>";
-                echo "<td>" . $points . "</td>";
-                echo "<td>" . $playerStats[$playerNumbers[$j]]['Wins'] . "</td>";
-                echo "<td>" . $playerStats[$playerNumbers[$j]]['Draws'] . "</td>";
-                echo "<td>" . $playerStats[$playerNumbers[$j]]['Losses'] . "</td>";
-                echo "<td>" . $playerStats[$playerNumbers[$j]]['GoalsFor'] . "</td>";
-                echo "<td>" . $playerStats[$playerNumbers[$j]]['GoalsAgainst'] . "</td>";
-                echo "<td>" . $goalDifference . "</td><tr>";
-              }
-
-              echo "</table>";
-              echo "<a href=\"viewTournament.php?tournNum=" . $fields[1] . "\">Click here to view/enter results</a></td></tr>\n";
-
-              echo"</tr>\n";
+            $rowNum += 1;
+
+            //This row contains the tournament table corresponding to the above row
+            //It is hidden until the player clicks on the above row
+            echo "<tr id=\"tr$rowNum\"  style=\"display: none\"><td class=\"tableHolder\" colspan=\"2\">\n";
+            //Calls function which outputs the table
+            echo_inner_table($playerNumbers, $playerStats, $playerNames);
+            //Link takes user to page which will display the results and the tournament
+            echo "<a href=\"viewTournament.php?tournNum=" . $fields[1] . "\">Click here to view/enter results</a></td></tr>\n";
+            echo"</tr>\n";
+
+            $rowNum += 1;
             }
           }
-
         ?>
       </table>
      &nbsp;<br/>

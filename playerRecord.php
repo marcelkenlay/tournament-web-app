@@ -121,7 +121,7 @@
 
     $rowNum = 1;
 
-    for ($i=0; $i < count($pastTournamentRecords); $i++) {
+    for ($i=count($pastTournamentRecords)-1; $i >= 0; $i--) {
 
       if(strlen($pastTournamentRecords[$i]) == 0){
         continue;
