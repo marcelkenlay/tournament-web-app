@@ -40,7 +40,7 @@ function expandTournament(obj) {
         });
         $('html, body').animate({
           scrollTop: $(rowName).offset().top - 120
-        }, 700);
+        }, 300);
       } else {
         $(nextRowName).fadeOut( "slow", function() {
             row.class = 'notExpanded';

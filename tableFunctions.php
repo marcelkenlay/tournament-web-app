@@ -1,27 +1,63 @@
 <?php
-  function quick_sort($array, $playerStats){
+  function quick_sort($array, $playerStats, $sortingStats){
     $length = count($array);
     if($length <= 1){
       return $array;
     } else {
-      $pivot = $array[0];
-      $pivotPoints = 3 * $playerStats[$array[0]]['Wins']
-             + $playerStats[$array[0]]['Draws'];
-      $pivotGoalDiff = $playerStats[$array[0]]['GoalsFor'] - $playerStats[$array[0]]['GoalsAgainst'];
+      $pivotPlayerStats = $playerStats[$array[0]];
+      $pivotPoints = 3 * $pivotPlayerStats['Wins']
+             + $pivotPlayerStats['Draws'];
+      $pivotGoalDiff = $pivotPlayerStats['GoalsFor']
+            - $pivotPlayerStats['GoalsAgainst'];
       $left = $right = array();
       for($k = 1; $k < count($array); $k++){
-        $points = 3 * $playerStats[$array[$k]]['Wins'] + $playerStats[$array[$k]]['Draws'];
-        $goalDiff = $playerStats[$array[$k]]['GoalsFor'] - $playerStats[$array[$k]]['GoalsAgainst'];
-        if($points > $pivotPoints
-            || ($points == $pivotPoints && $goalDiff > $pivotGoalDiff)){
+        $currentPlayerStats = $playerStats[$array[$k]];
+        $diff = 0;
+        for ($i = 0; $i < count($sortingStats) && $diff == 0; $i++) {
+          if (strcmp($sortingStats[$i],"Points") == 0){
+            $points = 3 * $currentPlayerStats['Wins'] + $currentPlayerStats['Draws'];
+            $diff = $points - $pivotPoints;
+          } else if (strcmp($sortingStats[$i],"GoalDiff") == 0){
+            $goalDiff = $currentPlayerStats['GoalsFor'] - $currentPlayerStats['GoalsAgainst'];
+            $diff = $goalDiff - $pivotGoalDiff;
+          } else{
+            $diff =  $currentPlayerStats[$sortingStats[$i]] - $pivotPlayerStats[$sortingStats[$i]];
+          }
+        }
+        if($diff > 0){
            $left[] = $array[$k];
         } else {
            $right[] = $array[$k];
         }
        }
-       return array_merge(quick_sort($left, $playerStats), array($pivot), quick_sort($right, $playerStats));
-    }
+       return array_merge(quick_sort($left, $playerStats , $sortingStats), array($array[0]), quick_sort($right, $playerStats, $sortingStats));
+     }
   }
+
+
+  // function quick_sort($array, $playerStats){
+  //   $length = count($array);
+  //   if($length <= 1){
+  //     return $array;
+  //   } else {
+  //     $pivot = $array[0];
+  //     $pivotPoints = 3 * $playerStats[$array[0]]['Wins']
+  //            + $playerStats[$array[0]]['Draws'];
+  //     $pivotGoalDiff = $playerStats[$array[0]]['GoalsFor'] - $playerStats[$array[0]]['GoalsAgainst'];
+  //     $left = $right = array();
+  //     for($k = 1; $k < count($array); $k++){
+  //       $points = 3 * $playerStats[$array[$k]]['Wins'] + $playerStats[$array[$k]]['Draws'];
+  //       $goalDiff = $playerStats[$array[$k]]['GoalsFor'] - $playerStats[$array[$k]]['GoalsAgainst'];
+  //       if($points > $pivotPoints
+  //           || ($points == $pivotPoints && $goalDiff > $pivotGoalDiff)){
+  //          $left[] = $array[$k];
+  //       } else {
+  //          $right[] = $array[$k];
+  //       }
+  //      }
+  //      return array_merge(quick_sort($left, $playerStats), array($pivot), quick_sort($right, $playerStats));
+  //   }
+  // }
 
   function echo_inner_table($playerNumbers, $playerStats, $playerNames){
     echo "<table class=\"inner\" >\n";

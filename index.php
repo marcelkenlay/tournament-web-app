@@ -56,7 +56,7 @@
             $playerStats = processTournamentData($playerNumbers, $tournamentRecords);
             //Use quick sort function which will sort the player stats into the correct
             //order based on performance.
-            $playerNumbers = quick_sort($playerNumbers, $playerStats);
+            $playerNumbers = quick_sort($playerNumbers, $playerStats, ["Points", "GoalDiff", 'GoalsFor']);
 
 
             //Output row which summarises tournament information
