@@ -51,9 +51,16 @@
 
             //Split first record to get players involved
             $playerNumbers = explode(",", $tournamentRecords[0]);
-            //Call function which will process remaining records and return a 2D array
-            //which details the performance of all players involved
-            $playerStats = processTournamentData($playerNumbers, $tournamentRecords);
+
+            //Initialises 2D array to store stats for players
+            $playerStats = array();
+            for ($j=0; $j < count($playerNumbers); $j++) {
+              $stats = array("Points"=>0, "Wins"=>0, "Draws"=>0, "Losses"=>0, "GoalsFor"=>0, "GoalsAgainst"=>0);
+              $playerStats[($playerNumbers[$j])] = $stats;
+            }
+            //Call function which will process remaining records and complete
+            //player stats array showing the players performance in the tournament
+            $playerStats = processTournamentData($playerNumbers, $playerStats, $tournamentRecords);
             //Use quick sort function which will sort the player stats into the correct
             //order based on performance.
             $playerNumbers = quick_sort($playerNumbers, $playerStats, ["Points", "GoalDiff", 'GoalsFor']);

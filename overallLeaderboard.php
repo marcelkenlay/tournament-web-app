@@ -30,35 +30,23 @@
         </div>
       </div>
   <?php
-    function quick_sort($array, $playerStats, $sortingStat, $ascending){
-      $length = count($array);
-      if($length <= 1){
-        return $array;
-      } else {
-        $pivot = $array[0];
-        $left = $right = array();
-        for($k = 1; $k < count($array); $k++){
-          if((!$ascending && $playerStats[$pivot][$sortingStat] < $playerStats[$array[$k]][$sortingStat])
-              || ($ascending && $playerStats[$pivot][$sortingStat] > $playerStats[$array[$k]][$sortingStat])){
-             $left[] = $array[$k];
-          } else {
-             $right[] = $array[$k];
-          }
-         }
-         return array_merge(quick_sort($left, $playerStats, $sortingStat, $ascending),
-                          array($pivot), quick_sort($right, $playerStats, $sortingStat, $ascending));
-      }
-    }
+    require 'tableFunctions.php';
+    require 'fileHandling.php';
+
+    function echo_th_for($stat, $shorthand, $sortingStat){
+      echo "<th><a class=\"";
+      echo ($sortingStat == $stat ? "current" : "notCurrent");
+      echo "\" href=\"overallLeaderboard.php?sortBy=$stat\">$shorthand";
+      echo ($sortingStat == $stat ? "↓" : "");
+      echo "</a></th>\n";
+
+    }
 
-    $playerFile = fopen("../data/playerNames.txt", "r") or die("Unable to open file!");
-    $playerFileText = fread($playerFile,filesize("../data/playerNames.txt"));
+    $playerFileText = readFileText("../data/playerNames.txt");
     $playerFileText = preg_replace('/\s+/', '', $playerFileText);
-    fclose($playerFile);
     $playerNames = explode(",",$playerFileText);
 
-    $pastTournamentFile = fopen("../data/pastTournamentNames.txt", "r") or die("Unable to open file!");
-    $fileText = fread($pastTournamentFile,filesize("../data/pastTournamentNames.txt"));
-    fclose($pastTournamentFile);
+    $fileText = readFileText("../data/pastTournamentNames.txt");
     $pastTournamentRecords = explode("\n",$fileText);
 
     $playerNumbers = array();
@@ -79,54 +67,28 @@
       $tournamentNumber = (explode("|", $pastTournamentRecords[$i]))[1];
 
       $tournamentFileName = "../data/tournaments/tournament". $tournamentNumber . ".txt";
-      $tournamentFileName = preg_replace('/\s+/', '', $tournamentFileName);
-
-      $tournamentFile = fopen($tournamentFileName, "r") or die("Unable to open file!");
-      $tournamentFileText = fread($tournamentFile,filesize($tournamentFileName));
-      fclose($tournamentFile);
+      $tournamentFileName = preg_replace('/\s+/', '', $tournamentFileName);
+      $tournamentFileText = readFileText($tournamentFileName);
 
       $tournamentRecords = explode("\n", $tournamentFileText);
-
-      for ($j=1; $j < count($tournamentRecords); $j++) {
-        if (strlen($tournamentRecords[$j]) == 0){
-          continue;
-        }
-        $matchFields = explode(",", $tournamentRecords[$j]);
-        if (strlen($matchFields[1]) > 0 && strlen($matchFields[2]) > 0){
-          $playerStats[($matchFields[0])]['GamesPlayed'] += 1;
-            $playerStats[($matchFields[3])]['GamesPlayed'] += 1;
-          $playerStats[($matchFields[0])]['GoalsFor'] += $matchFields[1];
-          $playerStats[($matchFields[3])]['GoalsAgainst'] += $matchFields[1];
-          $playerStats[($matchFields[0])]['GoalsAgainst'] += $matchFields[2];
-          $playerStats[($matchFields[3])]['GoalsFor'] += $matchFields[2];
-          if ($matchFields[1] > $matchFields[2]) {
-            $playerStats[($matchFields[0])]['Wins'] += 1;
-            $playerStats[($matchFields[0])]['Points'] += 3;
-            $playerStats[($matchFields[3])]['Losses'] += 1;
-          } elseif ($matchFields[1] < $matchFields[2]) {
-            $playerStats[($matchFields[0])]['Losses'] += 1;
-            $playerStats[($matchFields[3])]['Points'] += 3;
-            $playerStats[($matchFields[3])]['Wins'] += 1;
-          } else {
-            $playerStats[($matchFields[0])]['Draws'] += 1;
-            $playerStats[($matchFields[0])]['Points'] += 1;
-            $playerStats[($matchFields[3])]['Draws'] += 1;
-            $playerStats[($matchFields[3])]['Points'] += 1;
-          }
-        }
-      }
+
+      $playerStats = processTournamentData($playerNumbers, $playerStats, $tournamentRecords);
     }
 
     for ($i=0; $i < count($playerNumbers); $i++) {
+      $playerStats[$i]['GamesPlayed'] =
+      $playerStats[$i]['Wins'] + $playerStats[$i]['Draws'] + $playerStats[$i]['Losses'];
       if ($playerStats[$i]['GamesPlayed'] == 0){
         continue;
       }
+      $playerStats[$i]['Points'] = 3 *  $playerStats[$i]['Wins'] + $playerStats[$i]['Draws'];
       $playerStats[$i]['WinRatio'] =
       round (100 * $playerStats[$i]['Wins'] / $playerStats[$i]['GamesPlayed'], 0);
       $playerStats[$i]['GoalsForPerGame'] =
       round ($playerStats[$i]['GoalsFor'] / $playerStats[$i]['GamesPlayed'], 2);
       $playerStats[$i]['GoalsAgainstPerGame'] =
       round ($playerStats[$i]['GoalsAgainst'] / $playerStats[$i]['GamesPlayed'], 2);
+      $playerStats[$i]['GoalDiff'] = $playerStats[$i]['GoalsFor'] - $playerStats[$i]['GoalsAgainst'];
     }
 
     $sortingStat = "WinRatio";
@@ -134,7 +96,7 @@
       $sortingStat = $_GET["sortBy"];
     }
 
-    $playerNumbers = quick_sort($playerNumbers, $playerStats, $sortingStat, FALSE);
+    $playerNumbers = quick_sort($playerNumbers, $playerStats, sort_stat_to_array($sortingStat));
     
     echo "<p>View in landscape for a better display.</p>";
     
@@ -142,69 +104,28 @@
     echo "<table id=\"overall\" border=\"1\" cellpadding=\"2\">\n";
     echo "<tr><th>Pos</th>
               <th>Name</th>";
-    if ($sortingStat == "GamesPlayed"){
-      echo "<th><a class=\"current\" href=\"overallLeaderboard.php?sortBy=GamesPlayed\">GP↓</a></th>";
-    } else {
-      echo "<th><a class=\"notCurrent\" href=\"overallLeaderboard.php?sortBy=GamesPlayed\">GP</a></th>";
-    }
-    if ($sortingStat == "Points"){
-    echo "<th><a class=\"current\" href=\"overallLeaderboard.php?sortBy=Points\">Pts↓</a></th>";
-    } else {
-    echo "<th><a class=\"notCurrent\" href=\"overallLeaderboard.php?sortBy=Points\">Pts</a></th>";
-    }
-    if ($sortingStat == "Wins"){
-    echo "<th><a class=\"current\" href=\"overallLeaderboard.php?sortBy=Wins\">W↓</a></th>";
-    } else {
-    echo "<th><a class=\"notCurrent\" href=\"overallLeaderboard.php?sortBy=Wins\">W</a></th>";
-    }
-    if ($sortingStat == "Draws"){
-    echo "<th><a class=\"current\" href=\"overallLeaderboard.php?sortBy=Draws\">D↓</a></th>";
-    } else {
-    echo "<th><a class=\"notCurrent\" href=\"overallLeaderboard.php?sortBy=Draws\">D</a></th>";
-    }
-    if ($sortingStat == "Losses"){
-    echo "<th><a class=\"current\" href=\"overallLeaderboard.php?sortBy=Losses\">L↓</a></th>";
-    } else {
-    echo "<th><a class=\"notCurrent\" href=\"overallLeaderboard.php?sortBy=Losses\">L</a></th>";
-    }
-    if ($sortingStat == "GoalsFor"){
-    echo "<th><a class=\"current\" href=\"overallLeaderboard.php?sortBy=GoalsFor\">GF↓</a></th>";
-    } else {
-    echo "<th><a class=\"notCurrent\" href=\"overallLeaderboard.php?sortBy=GoalsFor\">GF</a></th>";
-    }
-    if ($sortingStat == "GoalsAgainst"){
-    echo "<th><a class=\"current\" href=\"overallLeaderboard.php?sortBy=GoalsAgainst\">GA↓</a></th>";
-    } else {
-    echo "<th><a class=\"notCurrent\" href=\"overallLeaderboard.php?sortBy=GoalsAgainst\">GA</a></th>";
-    }
-    if ($sortingStat == "WinRatio"){
-    echo "<th><a class=\"current\" href=\"overallLeaderboard.php?sortBy=WinRatio\">W%↓</a></th>";
-    } else {
-    echo "<th><a class=\"notCurrent\" href=\"overallLeaderboard.php?sortBy=WinRatio\">W%</a></th>";
-    }
-    if ($sortingStat == "GoalsForPerGame"){
-    echo "<th><a class=\"current\" href=\"overallLeaderboard.php?sortBy=GoalsForPerGame\">GF/G↓</a></th>";
-    } else {
-    echo "<th><a class=\"notCurrent\" href=\"overallLeaderboard.php?sortBy=GoalsForPerGame\">GF/G</a></th>";
-    }
-    if ($sortingStat == "GoalsAgainstPerGame"){
-    echo "<th><a class=\"current\" href=\"overallLeaderboard.php?sortBy=GoalsAgainstPerGame\">GA/G↓</a></th>";
-    } else {
-    echo "<th><a class=\"notCurrent\" href=\"overallLeaderboard.php?sortBy=GoalsAgainstPerGame\">GA/G</a></th>";
-    }
-
+    echo_th_for("GamesPlayed", "GP", $sortingStat);
+    echo_th_for("Wins", "W", $sortingStat);
+    echo_th_for("Draws", "D", $sortingStat);
+    echo_th_for("Losses", "L", $sortingStat);
+    echo_th_for("GoalsFor", "GF", $sortingStat);
+    echo_th_for("GoalsAgainst", "GA", $sortingStat);
+    echo_th_for("Points", "Pts", $sortingStat);
+    echo_th_for("WinRatio", "W%", $sortingStat);
+    echo_th_for("GoalsForPerGame", "GF/G", $sortingStat);
+    echo_th_for("GoalsAgainstPerGame", "GA/G", $sortingStat);
     echo "</tr>\n";
 
     for ($j=0; $j < count($playerNumbers); $j++) {
       echo "<tr><td>" . ($j + 1) . "</td>";
-      echo "<td class=\"nameColumn\">" . $playerNames[$playerNumbers[$j]] . "</td>";
+      echo "<td class=\"catEndColumn\">" . $playerNames[$playerNumbers[$j]] . "</td>";
       echo "<td>" . $playerStats[$playerNumbers[$j]]['GamesPlayed'] . "</td>";
-      echo "<td>" . $playerStats[$playerNumbers[$j]]['Points'] . "</td>";
       echo "<td>" . $playerStats[$playerNumbers[$j]]['Wins'] . "</td>";
       echo "<td>" . $playerStats[$playerNumbers[$j]]['Draws'] . "</td>";
       echo "<td>" . $playerStats[$playerNumbers[$j]]['Losses'] . "</td>";
       echo "<td>" . $playerStats[$playerNumbers[$j]]['GoalsFor'] . "</td>";
       echo "<td>" . $playerStats[$playerNumbers[$j]]['GoalsAgainst'] . "</td>";
+      echo "<td class=\"catEndColumn\">" . $playerStats[$playerNumbers[$j]]['Points'] . "</td>";
       echo "<td>" . $playerStats[$playerNumbers[$j]]['WinRatio'] . "%</td>";
       echo "<td>" . $playerStats[$playerNumbers[$j]]['GoalsForPerGame'] . "</td>";
       echo "<td>" . $playerStats[$playerNumbers[$j]]['GoalsAgainstPerGame'] . "</td>";

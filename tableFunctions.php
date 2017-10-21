@@ -34,30 +34,31 @@
      }
   }
 
+  function sort_stat_to_array($sortingStat){
+    switch ($sortingStat) {
+      case 'GamesPlayed':
+        return ["GamesPlayed"];
+      case 'Points':
+        return ["Points", "WinRatio" ,"GoalDiff", "GoalsFor"];
+      case 'Wins':
+        return ["Wins", "WinRatio", "GoalDiff", "GoalsAgainst"];
+      case 'Draws':
+        return ["Draws"];
+      case 'Losses':
+        return ["Losses"];
+      case 'GoalsFor':
+        return ["GoalsFor", "GoalsForPerGame"];
+      case 'GoalsAgainst':
+        return ["GoalsAgainst", "GoalsAgainstPerGame"];
+      case 'GoalsForPerGame':
+        return ["GoalsForPerGame", "GoalsFor"];
+      case 'GoalsAgainstPerGame':
+        return ["GoalsAgainstPerGame", "GoalsAgainst"];
+      default:
+        return ["WinRatio", "Wins", "GoalDiff"];
+    }
+  }
 
-  // function quick_sort($array, $playerStats){
-  //   $length = count($array);
-  //   if($length <= 1){
-  //     return $array;
-  //   } else {
-  //     $pivot = $array[0];
-  //     $pivotPoints = 3 * $playerStats[$array[0]]['Wins']
-  //            + $playerStats[$array[0]]['Draws'];
-  //     $pivotGoalDiff = $playerStats[$array[0]]['GoalsFor'] - $playerStats[$array[0]]['GoalsAgainst'];
-  //     $left = $right = array();
-  //     for($k = 1; $k < count($array); $k++){
-  //       $points = 3 * $playerStats[$array[$k]]['Wins'] + $playerStats[$array[$k]]['Draws'];
-  //       $goalDiff = $playerStats[$array[$k]]['GoalsFor'] - $playerStats[$array[$k]]['GoalsAgainst'];
-  //       if($points > $pivotPoints
-  //           || ($points == $pivotPoints && $goalDiff > $pivotGoalDiff)){
-  //          $left[] = $array[$k];
-  //       } else {
-  //          $right[] = $array[$k];
-  //       }
-  //      }
-  //      return array_merge(quick_sort($left, $playerStats), array($pivot), quick_sort($right, $playerStats));
-  //   }
-  // }
 
   function echo_inner_table($playerNumbers, $playerStats, $playerNames){
     echo "<table class=\"inner\" >\n";
@@ -94,13 +95,7 @@
 
   }
 
-  function processTournamentData($playerNumbers, $tournamentRecords){
-
-    $playerStats = array();
-    for ($j=0; $j < count($playerNumbers); $j++) {
-      $stats = array("Points"=>0, "Wins"=>0, "Draws"=>0, "Losses"=>0, "GoalsFor"=>0, "GoalsAgainst"=>0);
-      $playerStats[($playerNumbers[$j])] = $stats;
-    }
+  function processTournamentData($playerNumbers, $playerStats, $tournamentRecords){
 
     for ($j=1; $j < count($tournamentRecords); $j++) {
       if (strlen($tournamentRecords[$j]) > 0){
@@ -123,6 +118,8 @@
         }
       }
     }
+
     return $playerStats;
   }
+
 ?>
