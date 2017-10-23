@@ -1,4 +1,6 @@
 <?php
+  $standardSorting = ['Points', 'GoalDiff', 'GoalsFor', 'Draws'];
+
   function quick_sort($array, $playerStats, $sortingStats){
     $length = count($array);
     if($length <= 1){

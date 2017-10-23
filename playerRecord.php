@@ -8,71 +8,22 @@
 </head>
 
 <body onload="load()">
-
-  <!-- </head>
-  <body onload="load()">
-    <div class="wrapper">
-      <div class="navigation fixed">
-        <h4>Tournament Tracker</h4>
-        <ul class="nav">
-          <li><a href="index.php">Past Tournaments</a></li>
-          <li class="active"><a href="overallLeaderboard.php">Leaderboard</a></li>
-          <li><a href="playerRecord.php">Player Record</a></li>
-          <li><a href="addTournament.php">Add a Tournament</a></li>
-        </ul>
-      </div>
-    </div> -->
-
-
-      <div class="wrapper">
-        <div class="navigation">
-          <ul class="nav">
-            <li><a href="index.php">Past Tournaments</a></li>
-            <li><a href="overallLeaderboard.php">Leaderboard</a></li>
-            <li class="active"><a href="playerRecord.php">Player Record</a></li>
-            <li><a href="addTournament.php">Add a Tournament</a></li>
-          </ul>
-        </div>
-      </div>
-
+
+  <?php
+    require 'header.php';
+    echoHeader(1);
+  ?>
+
   <form>
 
   <?php
-
-    function quick_sort($array, $playerStats){
-      $length = count($array);
-      if($length <= 1){
-        return $array;
-      } else {
-        $pivot = $array[0];
-        $pivotPoints = 3 * $playerStats[$array[0]]['Wins']
-               + $playerStats[$array[0]]['Draws'];
-        $pivotGoalDiff = $playerStats[$array[0]]['GoalsFor'] - $playerStats[$array[0]]['GoalsAgainst'];
-        $left = $right = array();
-        for($i = 1; $i < count($array); $i++){
-          $points = 3 * $playerStats[$array[$i]]['Wins'] + $playerStats[$array[$i]]['Draws'];
-          $goalDiff = $playerStats[$array[$i]]['GoalsFor'] - $playerStats[$array[$i]]['GoalsAgainst'];
-          if($points > $pivotPoints
-              || ($points == $pivotPoints && $goalDiff > $pivotGoalDiff)){
-             $left[] = $array[$i];
-          } else {
-             $right[] = $array[$i];
-          }
-         }
-         return array_merge(quick_sort($left, $playerStats), array($pivot), quick_sort($right, $playerStats));
-      }
-    }
-
-
-    $playerFile = fopen("../data/playerNames.txt", "r") or die("Unable to open file!");
-    $playerFileText = fread($playerFile,filesize("../data/playerNames.txt"));
-    $playerFileText = preg_replace('/\s+/', '', $playerFileText);
-    fclose($playerFile);
+    require "tableFunctions.php";
+    require "fileHandling.php";
+
+    $playerFileText = readFileText("../data/playerNames.txt");
     $playerNames = explode(",",$playerFileText);
 
-    $pastTournamentFile = fopen("../data/pastTournamentNames.txt", "r") or die("Unable to open file!");
-    $fileText = fread($pastTournamentFile,filesize("../data/pastTournamentNames.txt"));
-    fclose($pastTournamentFile);
+    $fileText = readFileText("../data/pastTournamentNames.txt");
     $pastTournamentRecords = explode("\n",$fileText);
 
     $playerToView = 0;
@@ -92,7 +43,6 @@
       echo "<option value=\"$j\">$playerNames[$j]</option>";
     }
     echo "</select>";
-    echo "<input type=\"submit\">";
     echo "</form>";
     echo "</div>";
     echo "</div>";
@@ -133,11 +83,7 @@
 
       $tournamentFileName = "../data/tournaments/tournament". $tournamentNumber . ".txt";
       $tournamentFileName = preg_replace('/\s+/', '', $tournamentFileName);
-
-      $tournamentFile = fopen($tournamentFileName, "r") or die("Unable to open file!");
-      $tournamentFileText = fread($tournamentFile,filesize($tournamentFileName));
-      fclose($tournamentFile);
-
+      $tournamentFileText = readFileText($tournamentFileName);
       $tournamentRecords = explode("\n", $tournamentFileText);
 
       $playerNumbers = explode(",",$tournamentRecords[0]);
@@ -201,7 +147,7 @@
         continue;
       }
 
-      $playerNumbers = quick_sort($playerNumbers, $playerStatsCurrent);
+      $playerNumbers = quick_sort($playerNumbers, $playerStatsCurrent, $standardSorting);
 
       $playerPosition = 0;
       for ($k=0; $k < count($playerNumbers); $k++) {
@@ -242,39 +188,15 @@
 
       $rowNum += 1;
 
-      echo "<tr id=\"tr$rowNum\"  style=\"display: none\"><td class=\"tableHolder\" colspan=\"4\"><table><div style=\"display: none\" >\n";
-      echo "<tr><th class=\"inner\">Pos</th>
-                <th class=\"inner\">Name</th>
-                <th class=\"inner\">GP</th>
-                <th class=\"inner\">Pts</th>
-                <th class=\"inner\">W</th>
-                <th class=\"inner\">D</th>
-                <th class=\"inner\">L</th>
-                <th class=\"inner\">GF</th>
-                <th class=\"inner\">GA</th>
-                <th class=\"inner\">GD</th>
-                </tr>\n";
-
-      $rowNum += 1;
-
-      for ($j=0; $j < count($playerNumbers); $j++) {
-        $gamesPlayed = $playerStatsCurrent[$playerNumbers[$j]]['Wins'] + $playerStatsCurrent[$playerNumbers[$j]]['Draws']
-                      + $playerStatsCurrent[$playerNumbers[$j]]['Losses'];
-        $points =  3 * $playerStatsCurrent[$playerNumbers[$j]]['Wins'] + $playerStatsCurrent[$playerNumbers[$j]]['Draws'];
-        $goalDifference = $playerStatsCurrent[$playerNumbers[$j]]['GoalsFor'] - $playerStatsCurrent[$playerNumbers[$j]]['GoalsAgainst'];
-        echo "<tr><td>" . ($j + 1) . "</td>";
-        echo "<td class=\"nameColumn\">" . $playerNames[$playerNumbers[$j]] . "</td>";
-        echo "<td>" . $gamesPlayed . "</td>";
-        echo "<td>" . $points . "</td>";
-        echo "<td>" . $playerStatsCurrent[$playerNumbers[$j]]['Wins'] . "</td>";
-        echo "<td>" . $playerStatsCurrent[$playerNumbers[$j]]['Draws'] . "</td>";
-        echo "<td>" . $playerStatsCurrent[$playerNumbers[$j]]['Losses'] . "</td>";
-        echo "<td>" . $playerStatsCurrent[$playerNumbers[$j]]['GoalsFor'] . "</td>";
-        echo "<td>" . $playerStatsCurrent[$playerNumbers[$j]]['GoalsAgainst'] . "</td>";
-        echo "<td>" . $goalDifference . "</td></tr>";
-      }
-
-      echo "</table></div></td></tr>";
+      echo "<tr id=\"tr$rowNum\"  style=\"display: none\"><td class=\"tableHolder\" colspan=\"4\">";
+      //Calls function which outputs the table
+      echo_inner_table($playerNumbers, $playerStatsCurrent, $playerNames);
+      //Link takes user to page which will display the results and the tournament
+      echo "<a href=\"viewTournament.php?tournNum=" . $tournamentNameFields[1] . "\">Click here to view/enter results</a></td></tr>\n";
+      echo"</tr>\n";
+
+      $rowNum += 1;
+
     }
     echo "</table>";
 
@@ -291,7 +213,7 @@
     }
     echo "<h2> $playerNames[$playerToView] record vs opponents</h2>";
     echo "<table class=\"playerVsPlayer\"><tr>";
-    echo "<th class=\"nameColumn\">Opponent</th>";
+    echo "<th class=\"catEndColumn\">Opponent</th>";
     echo "<th class=\"results\">GP</th>";
     echo "<th class=\"results\">W</th>";
     echo "<th class=\"results\">D</th>";
@@ -307,7 +229,7 @@
       if ($allPlayerNumbers[$j] == $playerToView ||$playerStats[$allPlayerNumbers[$j]]['GamesPlayed'] == 0) {
           continue;
       }
-      echo "<tr><td class=\"nameColumn\">vs " . $playerNames[$allPlayerNumbers[$j]] . "</td>";
+      echo "<tr><td class=\"catEndColumn\">vs " . $playerNames[$allPlayerNumbers[$j]] . "</td>";
       echo "<td>" . $playerStats[$allPlayerNumbers[$j]]['GamesPlayed'] . "</td>";
       echo "<td>" . $playerStats[$allPlayerNumbers[$j]]['Losses'] . "</td>";
       echo "<td>" . $playerStats[$allPlayerNumbers[$j]]['Draws'] . "</td>";

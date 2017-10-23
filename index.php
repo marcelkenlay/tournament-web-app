@@ -10,7 +10,7 @@
 <body onload="load()">
   <?php
     require 'header.php';
-    echoHeader();
+    echoHeader(0);
   ?>
   <div id="mydata">
     <h1>PREVIOUS TOURNAMENTS</h1>
