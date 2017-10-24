@@ -11,7 +11,7 @@
 
   <?php
     require 'header.php';
-    echoHeader(1);
+    echoHeader(2);
   ?>
 
   <form>
